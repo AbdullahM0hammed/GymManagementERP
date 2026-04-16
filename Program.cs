@@ -1,0 +1,65 @@
+using GymManagementSystemBLL;
+using GymManagementSystemBLL.Services.Classes;
+using GymManagementSystemBLL.Services.Interfaces;
+using GymManagementSystemDAL.Data.Contexts;
+using GymManagementSystemDAL.Data.DataSeed;
+using GymManagementSystemDAL.Repositories.Classes;
+using GymManagementSystemDAL.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+namespace GymManagementPL
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            // Add services to the container.
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddDbContext<GymDbContext>(
+                optaions =>
+                {optaions.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));});
+            //builder.Services.AddScoped(typeof(IGenaricRepository<>), typeof(GenaricRepository<>));
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped<IsessionRepository, SessionRepository>();
+            builder.Services.AddAutoMapper(X => X.AddProfile(new MappingProfiles()));
+            builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+            builder.Services.AddScoped<IMemberService, MemberService>();
+            builder.Services.AddScoped<ITrainerService, TrainerService>();
+            builder.Services.AddScoped<IPlanService, PlanService>();
+            builder.Services.AddScoped<ISessionService, SessionService>();
+            var app = builder.Build();
+            #region Data Seeding
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<GymDbContext>();
+                var pendingMigrations = dbContext.Database.GetPendingMigrations();
+                if (pendingMigrations.Any())
+                    dbContext.Database.Migrate();
+                GymDbContextSeeding.SeedData(dbContext);
+            }
+
+            #endregion
+            // Configure the HTTP request pipeline.
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseExceptionHandler("/Home/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.MapStaticAssets();
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}")
+                .WithStaticAssets();
+
+            app.Run();
+        }
+    }
+}
