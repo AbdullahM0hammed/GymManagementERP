@@ -4,8 +4,8 @@ namespace GymManagementSystemDAL.Entity
 {
     public class Member : GymUser
     {
-        // CreatedAt is the same of joining date
-        public string? Photo { get; set; }
+        // CreatedAt is the same of joining date 
+        public string Photo { get; set; } = null!;
 
         public HealthRecord HealthRecord { get; set; } = null!;
 
